@@ -9,6 +9,6 @@ export interface order {
   country: string;
   zipCode: number;
   totalAmount: number;
-  items: string[];
-  createdAt: Date;
+  items: Types.ObjectId[];
+  createdAt?: Date;
 }
