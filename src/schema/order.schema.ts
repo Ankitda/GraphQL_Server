@@ -18,7 +18,7 @@ const orderSchema = new Schema<IOrderDocument>({
     required: true,
   },
   address: {
-    type: String,   
+    type: String,
     required: true,
   },
   city: {
@@ -37,11 +37,13 @@ const orderSchema = new Schema<IOrderDocument>({
     type: Number,
     required: true,
   },
-  items: [{
-    type: Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
-  }],
+  items: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

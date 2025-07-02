@@ -1,22 +1,19 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 import errorWrapper from "../utils/errorCatching";
-import { Product } from '../types/product.types';
-import ProductModel from '../schema/product.schema';
+import { Product } from "../types/product.types";
+import ProductModel from "../schema/product.schema";
 
-export const getAllProducts = errorWrapper( async (req: Request, res: Response) => {
-  const products = await ProductModel.find();
-  res.status(200).json(products);
-});
+export const getAllProducts = errorWrapper(
+  async (req: Request, res: Response) => {
+    const products = await ProductModel.find();
+    res.status(200).json(products);
+  }
+);
 
-export const createProduct = errorWrapper(async (req: Request, res: Response) => {
-    const {
-      title,
-      description,
-      price,
-      stock,
-      brand,
-      category,  
-    } = req.body as Product;
+export const createProduct = errorWrapper(
+  async (req: Request, res: Response) => {
+    const { title, description, price, stock, brand, category } =
+      req.body as Product;
 
     const product = await ProductModel.create({
       title,
@@ -24,8 +21,9 @@ export const createProduct = errorWrapper(async (req: Request, res: Response) =>
       price,
       stock,
       brand,
-      category,  
+      category,
     });
 
     res.status(201).json(product);
-});
+  }
+);
