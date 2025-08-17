@@ -31,6 +31,7 @@ export const productFields = [
 ];
 
 export const orderFields = [
+  "_id",
   "orderNumber",
   "userDetails",
   "shippingAddress",
