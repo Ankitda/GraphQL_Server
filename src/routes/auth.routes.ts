@@ -1,10 +1,15 @@
 import express from "express";
-import { resetPassword, userLogin } from "../controllers/user.controller";
-import { userEmailVerification } from "../middlewares/auth.middleware";
+import {
+  forgotPassword,
+  resetPassword,
+  userLogin,
+} from "../controllers/user.controller";
+import { isAccountVerified } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
 router.post("/login", userLogin);
-router.put("/reset-password", userEmailVerification, resetPassword);
+router.post("/forgot-password", isAccountVerified, forgotPassword);
+router.put("/reset-password", isAccountVerified, resetPassword);
 
 export default router;
