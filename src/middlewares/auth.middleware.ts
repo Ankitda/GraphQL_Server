@@ -1,16 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import ApiError from "../utils/apiError";
 
-export const userEmailVerification = (
+export const isAccountVerified = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { email } = req.body;
-  const { email: emailField }: any = req.user;
+  const { accountVerified } = req.user as { accountVerified: boolean };
 
-  if (!email || !(email === emailField)) {
-    throw new ApiError("Unauthorized user access", 404);
+  if (!accountVerified) {
+    return next(new ApiError("Account not verified", 403));
   }
 
   next();
