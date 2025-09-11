@@ -3,6 +3,7 @@ import connectMongoDb from "./config/mongoDB";
 import apolloServer from "./graphQl/config/graphQl";
 import app from "./app";
 import { errorHandler } from "./middlewares/errorHandler";
+import { removeUnverifiedCodes } from "./automation/removeUnverifiedCodes";
 
 dotenv.config();
 
@@ -22,7 +23,10 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((error) => {
+  console.log("Error starting server:", error);
+});
+removeUnverifiedCodes(); // Start the cron job
 
 // Error Handler
 app.use(errorHandler);
