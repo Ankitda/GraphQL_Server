@@ -1,14 +1,45 @@
 import { Types } from "mongoose";
 
-export interface order {
-  userId: Types.ObjectId;
-  firstName: string;
-  lastName: string;
-  address: string;
+export interface Iaddress {
+  street: string;
   city: string;
+  state: string;
   country: string;
-  zipCode: number;
+  zipCode: string;
+}
+
+export interface Iitems {
+  product: Types.ObjectId;
+  quantity: number;
+  subtotal: number;
+  discount: number;
+}
+
+export interface Ipayment {
+  method: string;
+  status: string;
+  transactionId?: string;
+  paidAt?: Date;
+}
+
+export interface IOrder {
+  _id: Types.ObjectId;
+  orderNumber: string;
+  userDetails: Types.ObjectId;
+  shippingAddress: Iaddress;
+  billingAddress: Iaddress;
+  items: Iitems[];
+  payment: Ipayment;
+  status: string;
+  subtotal: number;
+  tax: number;
+  shippingCost: number;
+  discount: number;
   totalAmount: number;
-  items: Types.ObjectId[];
+  notes?: string;
+  trackingNumber?: string;
+  estimatedDeliveryDate?: Date;
+  cancelReason?: string;
   createdAt?: Date;
+  updatedAt?: Date;
 }
