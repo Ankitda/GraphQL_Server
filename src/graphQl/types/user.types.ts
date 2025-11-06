@@ -27,9 +27,27 @@ export const userTypeDefs = gql`
     updatedAt: Date!
   }
 
+  input CreateUserInput {
+    username: String!
+    email: String!
+    password: String!
+  }
+
+  input UpdateUserInput {
+    username: String!
+    email: String!
+    phoneNo: String!
+    role: Role!
+  }
+
   type Query {
     users(limit: Int, offset: Int): [User!]!
     user(id: String!): User!
     userOrderHistory(id: String!): [IOrder!]!
+  }
+
+  type Mutation {
+    createUser(input: CreateUserInput!): User!
+    updateUser(input: UpdateUserInput!): User!
   }
 `;
