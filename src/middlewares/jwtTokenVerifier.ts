@@ -21,7 +21,7 @@ export const verifyJwtToken = errorWrapper(
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      throw new ApiError("No token provided", 401);
+      return next(new ApiError("No token provided", 401));
     }
 
     jwt.verify(
@@ -29,7 +29,7 @@ export const verifyJwtToken = errorWrapper(
       process.env.JWT_SECRET as string,
       async (err, decoded: any) => {
         if (err) {
-          throw new ApiError("Invalid token", 401);
+          return next(new ApiError("Invalid token", 401))
         }
         req.user = (await User.findById(decoded._id)) as IUser;
         next();
