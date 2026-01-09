@@ -9,6 +9,8 @@ export const userFields = [
   "isPhoneNoVerified",
   "resetPasswordToken",
   "resetPasswordExpires",
+  "deactivationRequestedAt",
+  "scheduledDeactivationAt",
   "orders",
   "createdAt",
   "updatedAt",
