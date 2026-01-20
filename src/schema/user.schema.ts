@@ -87,6 +87,14 @@ const userSchema = new Schema<IUserDocument, IUserModel>(
       type: Number,
       select: false,
     },
+    deactivationRequestedAt: {
+      type: Date,
+      default: null,
+    },
+    scheduledDeactivationAt: {
+      type: Date,
+      default: null,
+    },
     orders: [orderSchema],
   },
   {
