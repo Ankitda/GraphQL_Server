@@ -16,6 +16,8 @@ export interface IUser {
   accountVerified: boolean;
   role: "USER" | "ADMIN";
   isActive: boolean;
+  deactivationRequestedAt?: Date;
+  scheduledDeactivationAt?: Date;
   orders?: IOrder[]; // array of orders
   createdAt?: Date;
   updatedAt?: Date;
