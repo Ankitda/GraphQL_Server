@@ -59,3 +59,26 @@ export const passwordChangeInHtml = (name: string) => `
 </div>
 
 `;
+
+export const callAccountDeactivationInHtml = (username : string, deactivationDate : Date) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Account Deactivation Requested</h2>
+        <p>Hi ${username},</p>
+        <p>We received a request to deactivate your account. Your account will be deactivated on <strong>${deactivationDate.toLocaleString()}</strong>.</p>
+        <p>If you didn't request this or changed your mind, you can cancel the deactivation anytime before the scheduled date by logging into your account.</p>
+        <p>If you have any questions, please contact our support team.</p>
+        <br/>
+        <p>Best regards,<br/>The Team</p>
+      </div>
+    `;
+
+export const cancelAccountDeactivationInHtml = (userName : string) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Account Deactivation Cancelled</h2>
+        <p>Hi ${userName},</p>
+        <p>Your account deactivation request has been successfully cancelled. Your account will remain active.</p>
+        <p>If you have any questions, please contact our support team.</p>
+        <br/>
+        <p>Best regards,<br/>The Team</p>
+      </div>
+    `;
