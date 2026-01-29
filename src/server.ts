@@ -4,6 +4,7 @@ import apolloServer from "./graphQl/config/graphQl";
 import app from "./app";
 import { errorHandler } from "./middlewares/errorHandler";
 import { removeUnverifiedCodes } from "./automation/removeUnverifiedCodes";
+import { processScheduledDeactivations } from "./automation/processScheduledDeactivations";
 
 dotenv.config();
 
@@ -26,7 +27,9 @@ async function startServer() {
 startServer().catch((error) => {
   console.log("Error starting server:", error);
 });
-removeUnverifiedCodes(); // Start the cron job
+
+removeUnverifiedCodes(); // Start the remove unverified codes cron job
+processScheduledDeactivations(); // Start the account deactivation cron job
 
 // Error Handler
 app.use(errorHandler);
