@@ -6,6 +6,8 @@ import { IUser } from "../types/user.types";
 import ApiError from "../utils/apiError";
 import { userFields } from "../constants/docFeilds.constants";
 import {
+  callAccountDeactivationInHtml,
+  cancelAccountDeactivationInHtml,
   passwordChangeInHtml,
   resetPasswordInHtml,
 } from "../constants/htmlFormat";
@@ -143,7 +145,7 @@ export const updateUser = errorWrapper(async (req: Request, res: Response) => {
   //Dynamic field update
   const fieldToUpdate = Object.keys(updateData).reduce(
     (acc: Record<string, any>, field: string) => {
-      if (userFields.includes(field) && !["createdAt", "_id"].includes(field)) {
+      if (userFields.includes(field) && !["createdAt", "_id", "accountVerified", "password", "resetPasswordToken", "resetPasswordExpires", "isPhoneNoVerified", "deactivationRequestedAt", "scheduledDeactivationAt", "orders"].includes(field)) {
         (acc as any)[field] = (updateData as any)[field];
       }
       return acc;
@@ -215,5 +217,84 @@ export const getOrdersByUser = errorWrapper(
     const { email } = req.user as { email: string };
     const user = await User.findAllOrdersByUser(email);
     res.status(200).json(user);
+  }
+);
+
+export const requestAccountDeactivation = errorWrapper(
+  async (req: Request, res: Response) => {
+    const { _id, email, username } = req.user as IUser;
+
+    const user = await User.findById(_id);
+
+    if (!user) {
+      throw new ApiError("User not found", 404);
+    }
+
+    if (!user.isActive) {
+      throw new ApiError("Account is already deactivated", 400);
+    }
+
+    if (user.scheduledDeactivationAt) {
+      throw new ApiError(
+        "Account deactivation is already scheduled. You can cancel it if needed.",
+        400
+      );
+    }
+
+    // Schedule deactivation for 2 days from now
+    const deactivationDate = new Date();
+    deactivationDate.setDate(deactivationDate.getDate() + 2);
+
+    user.deactivationRequestedAt = new Date();
+    user.scheduledDeactivationAt = deactivationDate;
+    await user.save({ validateBeforeSave: false });
+
+    const htmlContent = callAccountDeactivationInHtml(username, deactivationDate);
+    
+    // Send confirmation email
+    await sendVerificationEmail(
+      email,
+      "Account Deactivation Scheduled",
+      htmlContent
+    );
+
+    res.status(200).json({
+      message: "Account deactivation scheduled successfully",
+      scheduledDeactivationAt: deactivationDate,
+    });
+  }
+);
+
+export const cancelAccountDeactivation = errorWrapper(
+  async (req: Request, res: Response) => {
+    const { _id, email, username } = req.user as IUser;
+
+    const user = await User.findById(_id);
+
+    if (!user) {
+      throw new ApiError("User not found", 404);
+    }
+
+    if (!user.scheduledDeactivationAt) {
+      throw new ApiError("No pending account deactivation found", 400);
+    }
+
+    // Clear deactivation fields
+    user.deactivationRequestedAt = undefined;
+    user.scheduledDeactivationAt = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    const htmlContent = cancelAccountDeactivationInHtml(username);
+    
+    // Send confirmation email
+    await sendVerificationEmail(
+      email,
+      "Account Deactivation Cancelled",
+      htmlContent
+    );
+
+    res.status(200).json({
+      message: "Account deactivation cancelled successfully",
+    });
   }
 );
