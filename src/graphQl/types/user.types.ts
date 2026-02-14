@@ -73,8 +73,6 @@ export const userTypeDefs = gql`
   }
 
   input AccountDeactivationRequestInput {
-    username: String!
-    email: String!
     _id: ID!
   }
 
