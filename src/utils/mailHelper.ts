@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -23,6 +26,7 @@ export async function sendVerificationEmail(
 
     console.log("Email sent:", info.messageId);
   } catch (error) {
+    console.log("error : ", error);
     throw error;
   }
 }
