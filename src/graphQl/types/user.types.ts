@@ -78,10 +78,10 @@ export const userTypeDefs = gql`
 
   type Query {
     # Get all users with optional field selection
-    users(fieldsToFetch: [String!]): [User!]!
+    users: [User!]!
     
     # Get user by ID with optional field selection
-    user(fieldsToFetch: [String!]): User!
+    user: User!
     
     # Get all orders for the authenticated user
     userOrderHistory: [IOrder!]!
