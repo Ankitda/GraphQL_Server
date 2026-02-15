@@ -1,6 +1,5 @@
 import User, { IUserDocument } from "../../schema/user.schema";
 import { IUser } from "../../types/user.types";
-import { userFields } from "../../constants/docFeilds.constants";
 import ApiError from "../../utils/apiError";
 import crypto from "crypto";
 import { GraphQLError } from "graphql";
@@ -15,38 +14,16 @@ import { requireAuth } from "../../utils/graphqlHelper";
 
 export const userResolvers = {
   Query: {
-    users: async (parent: any, { fieldsToFetch }: { fieldsToFetch?: string[] }, context: any) => {
+    users: async (parent: any, args: any, context: any) => {
       const userContext = requireAuth(context?.user);
-
-      let projection: Record<string, 1> = {};
-      if (fieldsToFetch?.length) {
-        const allowed = fieldsToFetch.filter((f) => userFields.includes(f));
-        if (allowed.length) {
-          projection = allowed.reduce((acc: Record<string, 1>, field: string) => {
-            acc[field] = 1;
-            return acc;
-          }, {});
-        }
-      }
-      const users = await User.find({}, projection);
+      const users = await User.find({});
       return users;
     },
 
-    user: async (parent: any, { fieldsToFetch }: { fieldsToFetch?: string[] }, context: any) => {
+    user: async (parent: any, args: any, context: any) => {
       const userContext = requireAuth(context?.user);
       const { _id } = userContext;
-
-      let projection: Record<string, 1> = {};
-      if (fieldsToFetch?.length) {
-        projection = fieldsToFetch.reduce((acc: Record<string, 1>, field: string) => {
-          if (userFields.includes(field)) {
-            acc[field] = 1;
-          }
-          return acc;
-        }, {});
-      }
-
-      const user = await User.findById(_id, projection);
+      const user = await User.findById(_id);
       if (!user) {
         throw new ApiError("User not found", 404);
       }
@@ -63,7 +40,8 @@ export const userResolvers = {
   },
 
   Mutation: {
-    createUser: async (parent: any, { username, email, password }: { username: string; email: string; password: string }) => {
+    createUser: async (parent: any, { input }: { input: { username: string; email: string; password: string } }) => {
+        const { username, email, password } = input;
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
           throw new ApiError("User already exists", 400);
@@ -76,7 +54,8 @@ export const userResolvers = {
         return newUser;
     },
 
-    login: async (parent: any, { email, password }: { email: string; password: string }) => {
+    login: async (parent: any, { input }: { input: { email: string; password: string } }) => {
+        const { email, password } = input;
         const user = await User.findOne({ email }).select("+password");
         if (!user) {
           throw new ApiError("Invalid email", 401);
@@ -89,30 +68,11 @@ export const userResolvers = {
         return { token };
     },
 
-    forgotPassword: async (parent: any, { email, _id }: { email: string; _id: string }, context: any) => {
-       // Controller uses req.user, but forgotPassword usually takes email from input if unauthenticated,
-       // OR if it's an authenticated-only endpoint, it takes from context.
-       // The Types definition has `input: forgotPasswordInput` which has `email` and `_id`.
-       // However, context suggests typical flow is unauthenticated for forgot password? 
-       // Controller `forgotPassword` implementation uses `req.user` which implies User must be logged in? 
-       // Wait, `req.user` usually comes from auth middleware. 
-       // If the endpoint is strictly for logged in users to reset, then `req.user` makes sense.
-       // BUT, forgotPassword usually is for people who CAN'T log in.
-       // Looking at the controller: `const { _id, email } = req.user as IUser;` -> It requires auth.
-       // Looking at the Schema: `forgotPassword(input: forgotPasswordInput!): MessageResponse!`
-       // `forgotPasswordInput` has `email` and `_id`.
-       // I will use the input arguments as per the GraphQL schema, but the logic relies on finding the user.
+    forgotPassword: async (parent: any, { input }: { input: { email: string; _id: string } }, context: any) => {
+       const { email, _id } = input;
        
-       // ACTUALLY: The controller implementation looks surprisingly like it requires the user to be logged in (`req.user`). 
-       // This seems odd for a "forgot password" feature (usually public), but I MUST follow the controller logic provided OR the schema.
-       // unique situation: Schema passes ID and Email. Controller uses req.user. 
-       // If I follow schema, I trust input. If I follow controller, I trust context.
-       // Given common sense + schema input, I will use the input to find the user, 
-       // BUT the controller explicitly grabs provided user. 
-       // Let's stick closer to the schema args for finding the user, but use the logic for token generation.
-
        const userContext = requireAuth(context?.user);
-       const user = await User.findById(_id); // Controller used _id from req.user
+       const user = await User.findById(_id); 
        if (!user) {
          throw new ApiError("User not found", 404);
        }
@@ -131,24 +91,9 @@ export const userResolvers = {
        return { message: "Password reset email sent successfully." };
     },
 
-    resetPassword: async (parent: any, { oldPassword, newPassword, token }: { oldPassword: string; newPassword: string; token: string }, context: any) => {
-        // Controller uses req.user for `_id`? 
-        // `const { _id } = req.user as { _id: string };`
-        // This implies the user must be logged in to reset password? 
-        // Combined with `forgotPassword` requiring auth, this app might use "Change Password" flow?
-        // OR `req.user` is populated via the token provided?
-        // Wait, `resetPassword` controller logic:
-        // 1. Checks `token` from body.
-        // 2. Hashes it.
-        // 3. Finds user by `_id`.
-        // 4. Verifies `user.resetPasswordToken` matches hashed token.
-        // The issue is: where does `_id` come from in GraphQL?
-        // The `ResetPasswordInput` in types has: `oldPassword`, `newPassword`, `token`. It DOES NOT have `_id`.
-        // So how do we find the user?
-        // In the controller, `_id` comes from `req.user`.
-        // This strongly implies that `resetPassword` is an AUTHENTICATED endpoint.
-        // So I must assume context.user exists.
-
+    resetPassword: async (parent: any, { input }: { input: { oldPassword: string; newPassword: string; token: string } }, context: any) => {
+        const { oldPassword, newPassword, token } = input;
+        
         const userContext = requireAuth(context?.user);
         const { _id } = userContext;
         
@@ -185,10 +130,10 @@ export const userResolvers = {
         return { message: "Password reset successfully" };
     },
 
-    updateUser: async (parent: any, { input }: { input: any }, context: any) => {
+    updateUser: async (parent: any, { input }: { input: {username?: string; phoneNo?: string; role?: "USER" | "ADMIN"} }, context: any) => {
         const userContext = requireAuth(context?.user);
         const { _id } = userContext;
-        const updateData : {username?: string; phoneNo?: string; role?: "USER" | "ADMIN"} = input;
+        const updateData = input;
 
         const existingUser = await User.findById(_id);
         if (!existingUser) {
@@ -199,9 +144,21 @@ export const userResolvers = {
 
         // Logic from controller for field filtering
         const fieldToUpdate: any = {};
+        
+        if(updateData?.phoneNo){
+            if(existingUser?.phoneNo === updateData?.phoneNo){
+                throw new GraphQLError("Phone number is same, Please provide a different phone number", {
+                    extensions: { code: "BAD_REQUEST" },
+                });
+            }else{
+              fieldToUpdate.phoneNo = updateData.phoneNo;
+              fieldToUpdate.isPhoneNoVerified = false;
+            }
+        }
+
         Object.keys(updateData).forEach(
             (field: string) => {
-              if (updateData[field as keyof typeof updateData] !== undefined) {
+              if (updateData[field as keyof typeof updateData] !== undefined  && field !== "phoneNo") {
                 fieldToUpdate[field] = updateData[field as keyof typeof updateData];
               }
             }
@@ -214,7 +171,7 @@ export const userResolvers = {
         );
 
         if (!updatedUser) {
-            throw new GraphQLError("User not found", {
+            throw new GraphQLError("Unable to update user", {
                 extensions: { code: "NOT_FOUND" },
             });
         }
@@ -222,11 +179,12 @@ export const userResolvers = {
         return updatedUser;
     },
 
-    accountDeactivationRequest: async (parent: any, { _id }: { _id: string }, context: any) => {
-        const userContext = requireAuth(context?.user);
+    accountDeactivationRequest: async (parent: any, { input }: { input: { _id: string } }, context: any) => {
+      const userContext = requireAuth(context?.user);
+      const { _id } = input;
         
         const user = await User.findById(_id);
-        if (!user) throw new GraphQLError("User not found", {
+        if (!user) throw new GraphQLError("Unable to find user", {
             extensions: { code: "NOT_FOUND" },
         });
 
@@ -253,11 +211,12 @@ export const userResolvers = {
         };
     },
 
-    cancelDeactivationRequest: async (parent: any, { _id }: { _id: string }, context: any) => {
-        const userContext = requireAuth(context?.user);
+    cancelDeactivationRequest: async (parent: any, { input }: { input: { _id: string } }, context: any) => {
+      const userContext = requireAuth(context?.user);
+      const { _id } = input;
 
         const user : IUserDocument | null = await User.findById(_id);
-        if (!user) throw new GraphQLError("User not found", {
+        if (!user) throw new GraphQLError("Unable to find user", {
             extensions: { code: "NOT_FOUND" },
         });
         
@@ -266,13 +225,7 @@ export const userResolvers = {
         });
 
         user.deactivationRequestedAt = undefined;
-        user.scheduledDeactivationAt = undefined; // Type might be stricter in TS, explicitly set to undefined or null dependent on schema
-        // In User schema it is likely Date | undefined.
-        // Mongoose unsets with undefined or null usually.
-        // user.deactivationRequestedAt = undefined; 
-        // user.scheduledDeactivationAt = undefined;
-        // The controller uses `undefined`.
-        // To be safe with types if `undefined` isn't allowed by strict TS:
+        user.scheduledDeactivationAt = undefined; 
 
         await user.save({ validateBeforeSave: false });
 
