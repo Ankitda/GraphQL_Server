@@ -3,7 +3,7 @@ import User from "../schema/user.schema";
 
 export const processScheduledDeactivations = () => {
   // Run every 24 hours to check for accounts that need to be deactivated
-  cron.schedule("*/1440 * * * *", async () => {
+  cron.schedule("0 12 * * *", async () => {
     try {
       const now = new Date();
 
@@ -34,5 +34,9 @@ export const processScheduledDeactivations = () => {
     } catch (error) {
       console.error("Error processing scheduled deactivations:", error);
     }
-  });
+  },
+  {
+    timezone: 'Asia/Kolkata'
+  }
+);
 };
