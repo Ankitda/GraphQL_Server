@@ -48,6 +48,7 @@ export const userTypeDefs = gql`
     username: String!
     email: String!
     password: String!
+    role: Role!
   }
 
   input LoginInput {
@@ -79,10 +80,10 @@ export const userTypeDefs = gql`
   type Query {
     # Get all users with optional field selection
     users: [User!]!
-    
+
     # Get user by ID with optional field selection
     user: User!
-    
+
     # Get all orders for the authenticated user
     userOrderHistory: [IOrder!]!
   }
@@ -90,21 +91,25 @@ export const userTypeDefs = gql`
   type Mutation {
     # Create a new user account
     createUser(input: CreateUserInput!): User!
-    
+
     # Login and receive authentication token
     login(input: LoginInput!): AuthPayload!
-    
+
     # Request password reset (sends email with reset token)
     forgotPassword(input: forgotPasswordInput!): MessageResponse!
-    
+
     # Reset password using token from email
     resetPassword(input: ResetPasswordInput!): MessageResponse!
-    
+
     # Update user profile (requires authentication)
     updateUser(input: UpdateUserInput!): User!
 
-    accountDeactivationRequest(input: AccountDeactivationRequestInput!): ActivateAccountDeactivationResponse!
+    accountDeactivationRequest(
+      input: AccountDeactivationRequestInput!
+    ): ActivateAccountDeactivationResponse!
 
-    cancelDeactivationRequest(input: AccountDeactivationRequestInput!) : CancelAccountDeactivationResponse!
+    cancelDeactivationRequest(
+      input: AccountDeactivationRequestInput!
+    ): CancelAccountDeactivationResponse!
   }
 `;
