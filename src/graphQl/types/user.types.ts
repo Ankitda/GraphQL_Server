@@ -104,11 +104,12 @@ export const userTypeDefs = gql`
     # Update user profile (requires authentication)
     updateUser(input: UpdateUserInput!): User!
 
+    # Activate account deactivation request
     accountDeactivationRequest(
       input: AccountDeactivationRequestInput!
     ): ActivateAccountDeactivationResponse!
 
-    cancelDeactivationRequest(
+    # Cancel account deactivation request
       input: AccountDeactivationRequestInput!
     ): CancelAccountDeactivationResponse!
   }
