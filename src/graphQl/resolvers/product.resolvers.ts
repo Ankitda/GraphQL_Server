@@ -6,8 +6,9 @@ import {
   updateImage,
   uploadImage,
 } from "../../utils/cloudinaryHelper";
-import { IProduct } from "../../types/product.types";
+import { IProduct, IReview } from "../../types/product.types";
 import { UploadApiResponse } from "cloudinary";
+import { GraphQLError } from "graphql";
 
 // Helper for GraphQL Upload stream to buffer
 const streamToBuffer = async (
@@ -137,20 +138,60 @@ export const productResolvers = {
       _: any,
       { field }: { field: (Partial<IProduct> & { _id: string })[] },
     ) => {
-      const operations = field.map((item) => ({
+      const ids = field.map((item) => item._id);
+      const operations = field.map(({ _id, ...updateData }) => ({
         updateOne: {
-          filter: { _id: item._id },
-          update: { $set: item },
+          filter: { _id },
+          update: { $set: updateData },
           upsert: false,
         },
       }));
-      await Product.bulkWrite(operations);
-      return "Products updated successfully";
+      const bulkWriteResult = await Product.bulkWrite(operations);
+      if (!bulkWriteResult) {
+        throw new GraphQLError("Failed to update products", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      const updatedProducts = await Product.find({ _id: { $in: ids } });
+      return updatedProducts.map((product) => {
+        const discountedPrice = product.calculateDiscountedPrice();
+        return {
+          ...product.toObject(),
+          discountedPrice: discountedPrice || null,
+        };
+      });
+    },
+
+    updateProductReview: async (
+      _: any,
+      { _id, input }: { _id: string; input: Partial<IReview> },
+    ) => {
+      const product = await Product.findById(_id);
+      if (!product) throw new Error("Product not found");
+
+      if (!product.reviews) {
+        product.reviews = [];
+      }
+      product.reviews.push(input as IReview);
+
+      await product.save();
+      return product;
     },
 
     deleteProduct: async (_: any, { _id }: { _id: string }) => {
-      const deleted = await Product.findByIdAndDelete(_id);
-      return !!deleted;
+      const deleted = await Product.findByIdAndUpdate(_id, {
+        isActive: false,
+      });
+      if (!deleted) {
+        throw new GraphQLError("Product not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      return {
+        message: "Product deleted successfully",
+        isDeleted: true,
+      };
     },
 
     uploadThumbnail: async (_: any, { file }: { file: Promise<any> }) => {

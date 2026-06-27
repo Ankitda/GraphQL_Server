@@ -9,7 +9,7 @@ export interface IProductDocument extends Omit<IProduct, "_id">, Document {
 export interface IProductModel extends Model<IProductDocument> {
   findByCategory(
     category: string,
-    projectedFields?: ProjectionType<IProductDocument>
+    projectedFields?: ProjectionType<IProductDocument>,
   ): Promise<IProductDocument[]>;
 }
 
@@ -34,7 +34,30 @@ export const thumbnailSchema = new Schema(
   },
   {
     _id: false,
-  }
+  },
+);
+
+export const reviewSchema = new Schema(
+  {
+    userDetails: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    rating: {
+      type: Number,
+      required: [true, "Rating is required"],
+      min: [0, "Rating cannot be negative"],
+      max: [5, "Rating cannot exceed 5"],
+    },
+    feedback: {
+      type: String,
+      required: [true, "Feedback is required"],
+    },
+  },
+  {
+    _id: false,
+  },
 );
 
 export const productSchema = new Schema<IProductDocument, IProductModel>(
@@ -108,14 +131,14 @@ export const productSchema = new Schema<IProductDocument, IProductModel>(
     },
     thumbnail: thumbnailSchema,
     images: [thumbnailSchema],
+    reviews: [reviewSchema],
     status: {
       type: String,
-      enum: ["draft", "published", "outOfStock", "discontinued"],
+      enum: ["DRAFT", "PUBLISHED", "OUT_OF_STOCK", "DISCONTINUED"],
       default: "draft",
     },
     metadata: {
-      type: Map,
-      of: String,
+      type: Object,
     },
     isActive: {
       type: Boolean,
@@ -127,7 +150,7 @@ export const productSchema = new Schema<IProductDocument, IProductModel>(
     timestamps: true,
     // toJSON: { virtuals: true },
     // toObject: { virtuals: true },
-  }
+  },
 );
 
 // Create compound indexes for common queries
@@ -157,16 +180,34 @@ productSchema.methods.calculateDiscountedPrice = function (): number {
 // Static method to find products by category
 productSchema.statics.findByCategory = function (
   category: string,
-  projectedFields?: ProjectionType<IProductDocument>
+  projectedFields?: ProjectionType<IProductDocument>,
 ): Promise<IProductDocument[]> {
   return this.find({ category, isActive: true }, projectedFields).sort({
     createdAt: -1,
   });
 };
 
+// Pre-save hook to calculate rating and totalReviews based on reviews
+productSchema.pre("save", function (next) {
+  if (this.isModified("reviews")) {
+    if (this.reviews && this.reviews.length > 0) {
+      this.totalReviews = this.reviews.length;
+      const sum = this.reviews.reduce(
+        (acc, review) => acc + (review.rating || 0),
+        0,
+      );
+      this.rating = Number.parseFloat((sum / this.reviews.length).toFixed(1));
+    } else {
+      this.totalReviews = 0;
+      this.rating = 0;
+    }
+  }
+  next();
+});
+
 const Product = mongoose.model<IProductDocument, IProductModel>(
   "Product",
-  productSchema
+  productSchema,
 );
 
 export default Product;

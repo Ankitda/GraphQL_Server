@@ -30,6 +30,7 @@ export const productFields = [
   "subCategory",
   "thumbnail",
   "images",
+  "reviews",
   "status",
   "metadata",
   "isActive",
