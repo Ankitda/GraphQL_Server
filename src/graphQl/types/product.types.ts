@@ -2,6 +2,14 @@ import { gql } from "apollo-server-express";
 
 export const productTypeDefs = gql`
   scalar Upload
+  scalar JSON
+
+  enum ProductStatus {
+    DRAFT
+    PUBLISHED
+    OUT_OF_STOCK
+    DISCONTINUED
+  }
 
   type Thumbnail {
     imageId: String!
@@ -30,7 +38,7 @@ export const productTypeDefs = gql`
     thumbnail: Thumbnail
     images: [Thumbnail!]
     status: String!
-    metadata: [KeyValuePair!]
+    metadata: JSON
     isActive: Boolean!
     createdAt: String
     updatedAt: String
@@ -42,15 +50,15 @@ export const productTypeDefs = gql`
     brands: [String!]!
   }
 
+  type deleteResponse {
+    message: String!
+    isDeleted: Boolean!
+  }
+
   input ThumbnailInput {
     imageId: String!
     url: String!
     format: String!
-  }
-
-  input KeyValuePairInput {
-    key: String!
-    value: String!
   }
 
   input ProductInput {
@@ -58,17 +66,12 @@ export const productTypeDefs = gql`
     description: String!
     price: Float!
     discountPercentage: Float
-    rating: Float
-    totalReviews: Int
     stock: Int!
     brand: String!
     category: String!
     subCategory: String!
-    thumbnail: ThumbnailInput
-    images: [ThumbnailInput!]
-    status: String!
-    metadata: [KeyValuePairInput!]
-    isActive: Boolean!
+    status: ProductStatus!
+    metadata: JSON
   }
 
   input ProductUpdateInput {
@@ -76,17 +79,32 @@ export const productTypeDefs = gql`
     description: String
     price: Float
     discountPercentage: Float
-    rating: Float
-    totalReviews: Int
     stock: Int
     brand: String
     category: String
     subCategory: String
-    thumbnail: ThumbnailInput
-    images: [ThumbnailInput!]
     status: String
-    metadata: [KeyValuePairInput!]
-    isActive: Boolean
+    metadata: JSON
+  }
+
+  input ProductUpdateManyInput {
+    _id: ID!
+    title: String
+    description: String
+    price: Float
+    discountPercentage: Float
+    stock: Int
+    brand: String
+    category: String
+    subCategory: String
+    status: String
+    metadata: JSON
+  }
+
+  input ProductReviews {
+    userDetails: ID!
+    rating: Int!
+    feedback: String!
   }
 
   extend type Query {
@@ -103,8 +121,9 @@ export const productTypeDefs = gql`
   extend type Mutation {
     createProduct(input: ProductInput!): Product!
     updateProduct(_id: ID!, input: ProductUpdateInput!): Product!
-    updateManyProducts(field: [ProductUpdateInput!]!): String!
-    deleteProduct(_id: ID!): Boolean!
+    updateProductReview(_id: ID!, input: ProductReviews!): Product!
+    updateManyProducts(field: [ProductUpdateManyInput!]!): [Product!]!
+    deleteProduct(_id: ID!): deleteResponse!
     uploadThumbnail(file: Upload!): Thumbnail!
     updateThumbnail(imageId: String!, file: Upload!): Thumbnail!
     deleteThumbnail(imageId: String!): Boolean!

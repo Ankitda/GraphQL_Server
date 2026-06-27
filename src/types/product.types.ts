@@ -1,7 +1,14 @@
+import { Types } from "mongoose";
+
 export interface IThumbnail {
   imageId: string;
   url: string;
   format: string;
+}
+export interface IReview {
+  userDetails: Types.ObjectId;
+  rating: number;
+  feedback: string;
 }
 export interface IProduct {
   _id?: string;
@@ -19,6 +26,7 @@ export interface IProduct {
   images?: IThumbnail[];
   status: string;
   metadata?: Map<string, string>;
+  reviews?: IReview[];
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
