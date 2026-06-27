@@ -110,6 +110,7 @@ export const userTypeDefs = gql`
     ): ActivateAccountDeactivationResponse!
 
     # Cancel account deactivation request
+    cancelDeactivationRequest(
       input: AccountDeactivationRequestInput!
     ): CancelAccountDeactivationResponse!
   }
